@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPlug Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060608;
+    --bg2: #0d0d12;
+    --bg3: #13131b;
+    --bg4: #1a1a26;
+    --border: #1e1e2e;
+    --border2: #2a2a40;
+    --border3: #363658;
+    --text: #f0f0f8;
+    --text2: #8080a8;
+    --text3: #50507080;
+    --accent: #00d4ff;
+    --accent-dim: rgba(0,212,255,0.08);
+    --accent2: #8b5cf6;
+    --accent2-dim: rgba(139,92,246,0.08);
+    --green: #00e676;
+    --green-dim: rgba(0,230,118,0.08);
+    --red: #ff4d6d;
+    --red-dim: rgba(255,77,109,0.08);
+    --orange: #ff9100;
+    --yellow: #ffd600;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-lg: 20px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background effects */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% -10%, rgba(0,212,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 110%, rgba(139,92,246,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.018) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 100% 100% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(6,6,8,0.88);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .logo-icon {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 0 16px rgba(0,212,255,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  .logo-text {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text2);
+  }
+  .status-dot.online {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+  .status-dot.offline { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ── SIDEBAR ── */
+  sidebar {
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+  }
+
+  .nav-section {
+    padding: 0 4px;
+    margin-bottom: 4px;
+  }
+
+  .nav-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text2);
+    text-transform: uppercase;
+    padding: 10px 10px 6px;
+    opacity: 0.6;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text2);
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    position: relative;
+  }
+
+  .nav-item:hover {
+    background: var(--bg3);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(139,92,246,0.06));
+    color: var(--accent);
+    border-color: rgba(0,212,255,0.18);
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .nav-item .icon {
+    font-size: 15px;
+    width: 20px;
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--accent2), #6d28d9);
+    color: white;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  /* ── MAIN ── */
+  main {
+    padding: 28px 32px;
+    overflow-y: auto;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .page-title {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    text-transform: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0 rgba(0,212,255,0.4);
+  }
+  .btn-primary:hover {
+    background: #00bce0;
+    border-color: #00bce0;
+    box-shadow: 0 0 16px rgba(0,212,255,0.25);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: var(--bg3);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+  .btn-secondary:hover {
+    background: var(--bg4);
+    border-color: var(--border3);
+    transform: translateY(-1px);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border-color: rgba(255,77,109,0.25);
+  }
+  .btn-danger:hover {
+    background: var(--red-dim);
+    border-color: rgba(255,77,109,0.4);
+  }
+
+  .btn-success {
+    background: transparent;
+    color: var(--green);
+    border-color: rgba(0,230,118,0.25);
+  }
+  .btn-success:hover { background: var(--green-dim); }
+
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
+  .btn-sm { padding: 5px 11px; font-size: 11.5px; }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border2);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    opacity: 0.8;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .stat-card:hover::after { opacity: 1; }
+
+  .stat-card.s-blue::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+  .stat-card.s-blue::after { background: radial-gradient(ellipse at top, rgba(0,212,255,0.05), transparent 70%); }
+
+  .stat-card.s-purple::before { background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
+  .stat-card.s-purple::after { background: radial-gradient(ellipse at top, rgba(139,92,246,0.05), transparent 70%); }
+
+  .stat-card.s-green::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .stat-card.s-green::after { background: radial-gradient(ellipse at top, rgba(0,230,118,0.05), transparent 70%); }
+
+  .stat-card.s-orange::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); }
+  .stat-card.s-orange::after { background: radial-gradient(ellipse at top, rgba(255,145,0,0.05), transparent 70%); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-value.blue { color: var(--accent); text-shadow: 0 0 20px rgba(0,212,255,0.3); }
+  .stat-value.purple { color: var(--accent2); text-shadow: 0 0 20px rgba(139,92,246,0.3); }
+  .stat-value.green { color: var(--green); text-shadow: 0 0 20px rgba(0,230,118,0.3); }
+  .stat-value.orange { color: var(--orange); text-shadow: 0 0 20px rgba(255,145,0,0.3); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 6px;
+    font-weight: 400;
+  }
+
+  /* ── PLUG GRID ── */
+  .plug-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 18px;
+  }
+
+  /* ── PLUG CARD ── */
+  .plug-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+
+  .plug-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .plug-card.is-on {
+    border-color: rgba(0,212,255,0.25);
+    box-shadow: 0 0 0 1px rgba(0,212,255,0.08);
+  }
+
+  .plug-card.is-on::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.05), transparent 65%);
+    pointer-events: none;
+  }
+
+  .plug-card-header {
+    padding: 18px 18px 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .plug-info { flex: 1; }
+
+  .plug-name {
+    font-size: 14.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .plug-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .plug-type-badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    padding: 3px 8px;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+
+  .badge-hs110, .badge-energy_monitor {
+    background: rgba(139,92,246,0.15);
+    color: #c4b5fd;
+    border: 1px solid rgba(139,92,246,0.25);
+  }
+  .badge-hs100, .badge-basic {
+    background: rgba(0,212,255,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.22);
+  }
+  .badge-surge_protector {
+    background: rgba(255,145,0,0.12);
+    color: var(--orange);
+    border: 1px solid rgba(255,145,0,0.22);
+  }
+
+  .plug-ip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text2);
+  }
+
+  .plug-power-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    background: var(--bg3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    transition: all 0.2s;
+    color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  .plug-power-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.2);
+  }
+
+  .plug-power-btn.on {
+    border-color: var(--green);
+    color: var(--green);
+    background: var(--green-dim);
+    box-shadow: 0 0 16px rgba(0,230,118,0.2);
+  }
+
+  .plug-power-btn.off {
+    border-color: var(--border2);
+    color: var(--text2);
+  }
+
+  .plug-power-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  .plug-card-body { padding: 14px 18px 16px; }
+
+  /* Status metrics */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .metric {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 11px;
+    transition: border-color 0.15s;
+  }
+
+  .metric:hover { border-color: var(--border2); }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .metric-unit {
+    font-size: 10px;
+    color: var(--text2);
+    margin-left: 2px;
+  }
+
+  .metric.highlight .metric-value { color: var(--accent); }
+
+  /* Online indicator */
+  .online-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .online-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .online-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .online-dot.yes {
+    background: var(--green);
+    box-shadow: 0 0 5px var(--green);
+    animation: pulse 2s infinite;
+  }
+  .online-dot.no { background: var(--red); }
+  .online-dot.loading { background: var(--yellow); animation: pulse 1s infinite; }
+
+  .last-updated {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  /* Card actions */
+  .plug-actions {
+    display: flex;
+    gap: 7px;
+  }
+
+  .plug-actions .btn { flex: 1; justify-content: center; }
+
+  /* Loading skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ── SCAN PAGE ── */
+  .scan-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .scan-form {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  .form-input {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 200px;
+  }
+
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+  }
+  .form-input::placeholder { color: var(--text2); opacity: 0.6; }
+
+  /* Scan progress */
+  .scan-progress {
+    margin-top: 20px;
+    display: none;
+  }
+
+  .scan-progress.visible { display: block; }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .progress-bar-wrap {
+    height: 3px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  .progress-bar.indeterminate {
+    width: 40%;
+    animation: progress-slide 1.5s infinite;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  @keyframes progress-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  /* Scan results */
+  .scan-results { margin-top: 24px; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .results-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .device-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .device-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+
+  .device-item:hover {
+    border-color: var(--border2);
+    transform: translateX(3px);
+  }
+
+  .device-icon {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(139,92,246,0.12));
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    flex-shrink: 0;
+  }
+
+  .device-details { flex: 1; }
+
+  .device-model {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .device-sub {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .device-sub-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .device-sub-item span { color: var(--text); }
+
+  .already-badge {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    background: rgba(255,214,0,0.12);
+    color: var(--yellow);
+    border: 1px solid rgba(255,214,0,0.22);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Register modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(12px) saturate(150%);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 100%;
+    max-width: 430px;
+    position: relative;
+    animation: modal-in 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.92) translateY(-12px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-title {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    letter-spacing: -0.02em;
+  }
+
+  .modal-sub {
+    font-size: 12.5px;
+    color: var(--text2);
+    margin-bottom: 22px;
+    font-family: var(--mono);
+  }
+
+  .modal-fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
+
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  .modal-close {
+    position: absolute;
+    top: 18px; right: 18px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 8px;
+    line-height: 1;
+    transition: all 0.15s;
+    border-radius: 6px;
+  }
+  .modal-close:hover { color: var(--text); background: var(--bg4); }
+
+  /* ── TOAST ── */
+  .toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .toast {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    animation: toast-in 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    max-width: 300px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(16px) scale(0.96); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  .toast.success { border-color: rgba(0,230,118,0.35); background: linear-gradient(135deg, var(--bg2), rgba(0,230,118,0.04)); }
+  .toast.error { border-color: rgba(255,77,109,0.35); background: linear-gradient(135deg, var(--bg2), rgba(255,77,109,0.04)); }
+  .toast.info { border-color: rgba(0,212,255,0.35); background: linear-gradient(135deg, var(--bg2), rgba(0,212,255,0.04)); }
+
+  /* ── STATUS PAGE ── */
+  .status-detail {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+
+  .status-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(0,230,118,0.22);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .metrics-large {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .metric-large {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .metric-large .metric-label { font-size: 9.5px; margin-bottom: 8px; }
+  .metric-large .metric-value { font-size: 30px; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 56px 20px;
+    color: var(--text2);
+  }
+
+  .empty-icon { font-size: 44px; margin-bottom: 16px; opacity: 0.3; }
+  .empty-title {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .empty-text { font-size: 13px; line-height: 1.6; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    sidebar { display: none; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .metrics-large { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border3); }
+
+  /* ── SETTINGS PAGE ── */
+  .settings-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    margin-bottom: 14px;
+  }
+
+  .settings-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text2);
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+  .settings-row:last-child { border-bottom: none; }
+
+  .settings-row-label {
+    font-size: 13.5px;
+    font-weight: 500;
+  }
+  .settings-row-sub {
+    font-size: 11.5px;
+    color: var(--text2);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+
+  /* ── ANIMATED GRADIENT TEXT ── */
+  .grad-text {
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: grad-move 4s linear infinite;
+  }
+
+  @keyframes grad-move {
+    0% { background-position: 0%; }
+    100% { background-position: 200%; }
+  }
+
+  /* ── PROVISION PAGE ── */
+  #page-provision .scan-panel .settings-title {
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Smart<span>Plug</span></div>
+  </div>
+  <div class="header-right">
+    <div class="api-status">
+      <div class="status-dot" id="apiDot"></div>
+      <span id="apiStatusText">Bağlanıyor...</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <sidebar>
+    <div class="nav-section">
+      <div class="nav-label">Menü</div>
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <span class="icon">⊞</span> Dashboard
+        <span class="nav-badge" id="plugCountBadge">0</span>
+      </div>
+      <div class="nav-item" onclick="navigate('scan')">
+        <span class="icon">⟳</span> Ağ Tarama
+      </div>
+      <div class="nav-item" onclick="navigate('provision')">
+        <span class="icon">📡</span> Priz Kurulum
+      </div>
+      <div class="nav-item" onclick="navigate('settings')">
+        <span class="icon">⚙</span> Ayarlar
+      </div>
+    </div>
+  </sidebar>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- ── DASHBOARD PAGE ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title grad-text">Dashboard</div>
+          <div class="page-subtitle">Tüm prizlerin anlık durumu</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-secondary" onclick="refreshAll()">⟳ Yenile</button>
+          <button class="btn btn-primary" onclick="navigate('scan')">+ Cihaz Ekle</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card s-blue">
+          <div class="stat-label">Toplam Priz</div>
+          <div class="stat-value blue" id="statTotal">—</div>
+          <div class="stat-sub">kayıtlı cihaz</div>
+        </div>
+        <div class="stat-card s-green">
+          <div class="stat-label">Çevrimiçi</div>
+          <div class="stat-value green" id="statOnline">—</div>
+          <div class="stat-sub">aktif cihaz</div>
+        </div>
+        <div class="stat-card s-purple">
+          <div class="stat-label">Açık</div>
+          <div class="stat-value purple" id="statOn">—</div>
+          <div class="stat-sub">enerji kullanıyor</div>
+        </div>
+        <div class="stat-card s-orange">
+          <div class="stat-label">Toplam Güç</div>
+          <div class="stat-value orange" id="statWatt">—</div>
+          <div class="stat-sub">watt anlık</div>
+        </div>
+      </div>
+
+      <!-- Plug grid -->
+      <div class="plug-grid" id="plugGrid">
+        <div class="empty-state" id="dashEmptyState" style="display:none;grid-column:1/-1">
+          <div class="empty-icon">🔌</div>
+          <div class="empty-title">Henüz priz eklenmemiş</div>
+          <div class="empty-text">Ağ tarama ile cihazlarını keşfet ve ekle.</div>
+          <br>
+          <button class="btn btn-primary" onclick="navigate('scan')" style="margin:0 auto">Ağı Tara</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCAN PAGE ── -->
+    <div class="page" id="page-scan">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ağ Tarama</div>
+          <div class="page-subtitle">Subnet'teki Kasa/HS cihazlarını otomatik keşfet</div>
+        </div>
+      </div>
+
+      <div class="scan-panel">
+        <div class="scan-form">
+          <div class="form-group">
+            <label class="form-label">Subnet</label>
+            <input class="form-input" id="subnetInput" value="10.141.1" placeholder="192.168.1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Timeout (sn)</label>
+            <input class="form-input" id="timeoutInput" value="2" type="number" min="0.5" max="5" step="0.5" style="min-width:100px">
+          </div>
+          <button class="btn btn-primary" id="scanBtn" onclick="startScan()">⟳ Taramayı Başlat</button>
+        </div>
+
+        <div class="scan-progress" id="scanProgress">
+          <div class="progress-header">
+            <span class="progress-text" id="progressText">Taranıyor...</span>
+            <span class="progress-text" id="progressPct"></span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar indeterminate" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scan-results" id="scanResults" style="display:none">
+        <div class="results-header">
+          <span class="results-title" id="resultsTitle">Bulunan Cihazlar</span>
+        </div>
+        <div class="device-list" id="deviceList"></div>
+      </div>
+    </div>
+
+    <!-- ── PROVISION PAGE ── -->
+    <div class="page" id="page-provision">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Priz Kurulum</div>
+          <div class="page-subtitle">Yeni prizi Tapo uygulaması olmadan WiFi'a bağla</div>
+        </div>
+        <button class="btn btn-secondary" onclick="scanPlugAPs()">🔍 AP Tara</button>
+      </div>
+
+      <!-- Bulunan AP'ler -->
+      <div class="scan-panel" id="apPanel" style="margin-bottom:20px">
+        <div class="settings-title" style="margin-bottom:12px">Çevredeki Prizler (Fabrika Modu)</div>
+        <div id="apList">
+          <div style="color:var(--text2);font-size:13px">
+            "AP Tara" butonuna bas — TP-Link ile başlayan ağlar kurulum bekleyen prizlerdir.
+          </div>
+        </div>
+      </div>
+
+      <!-- Kurulum formu -->
+      <div class="scan-panel">
+        <div class="settings-title" style="margin-bottom:16px">WiFi Kurulum Bilgileri</div>
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:480px">
+          <div class="form-group">
+            <label class="form-label">Prizin AP Adı (TP-Link_XXXX)</label>
+            <input class="form-input" id="plugApSsid" placeholder="TP-Link_ECA5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hedef WiFi (Prizin bağlanacağı ağ)</label>
+            <input class="form-input" id="targetSsid" placeholder="OfisWiFi">
+          </div>
+          <div class="form-group">
+            <label class="form-label">WiFi Şifresi</label>
+            <input class="form-input" id="targetPassword" type="password" placeholder="••••••••">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Geri Dönülecek Ağ (opsiyonel — boş bırakılırsa otomatik)</label>
+            <input class="form-input" id="originalSsid" placeholder="Otomatik tespit edilir">
+          </div>
+          <button class="btn btn-primary" id="provisionBtn" onclick="startProvision()" style="align-self:flex-start">
+            ⚡ Kurulumu Başlat
+          </button>
+        </div>
+      </div>
+
+      <!-- Adımlar -->
+      <div id="provisionSteps" style="display:none;margin-top:20px">
+        <div class="scan-panel">
+          <div class="settings-title" style="margin-bottom:12px">Kurulum Adımları</div>
+          <div id="stepsList"></div>
+          <div id="provisionResult" style="margin-top:16px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS PAGE ── -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ayarlar</div>
+          <div class="page-subtitle">API ve polling ayarları</div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">API Bağlantısı</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">API Base URL</div>
+            <div class="settings-row-sub">Smart Plug API'nin adresi</div>
+          </div>
+          <input class="form-input" id="apiUrlInput" value="http://127.0.0.1:8080" style="min-width:220px" onchange="saveSettings()">
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Polling Ayarları</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Güncelleme Aralığı</div>
+            <div class="settings-row-sub">Cihaz durumu kaç saniyede bir sorgulanır</div>
+          </div>
+          <input class="form-input" id="pollIntervalInput" value="5" type="number" min="2" max="60" style="min-width:80px" onchange="saveSettings()">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Otomatik Yenileme</div>
+            <div class="settings-row-sub">Dashboard açıkken polling aktif</div>
+          </div>
+          <input type="checkbox" id="autoRefreshToggle" checked onchange="saveSettings()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Hakkında</div>
+        <div class="settings-row">
+          <div class="settings-row-label">Smart Plug Dashboard</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text2)">v1.0.0</div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">API Durumu</div>
+          <span id="settingsApiStatus" style="font-family:var(--mono);font-size:12px">—</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Cihazı Kaydet</div>
+    <div class="modal-sub" id="modalSubtitle">IP: —</div>
+    <div class="modal-fields">
+      <div class="form-group">
+        <label class="form-label">Cihaz Adı *</label>
+        <input class="form-input" id="regName" placeholder="Örn: Salon TV Prizi">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Konum</label>
+        <input class="form-input" id="regLocation" placeholder="Örn: Oturma Odası">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Not</label>
+        <input class="form-input" id="regNotes" placeholder="Opsiyonel not...">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+      <button class="btn btn-primary" id="regBtn" onclick="registerDevice()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────
+let API_BASE = localStorage.getItem('apiBase') || 'http://127.0.0.1:8080';
+let POLL_INTERVAL = parseInt(localStorage.getItem('pollInterval') || '5');
+let AUTO_REFRESH = localStorage.getItem('autoRefresh') !== 'false';
+
+// ── STATE ────────────────────────────────────────────────
+let plugs = [];
+let statusCache = {};
+let pollTimer = null;
+let pendingRegisterIp = null;
+
+// ── INIT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  checkApiHealth();
+  loadPlugs();
+  setInterval(checkApiHealth, 10000);
+});
+
+// ── SETTINGS ─────────────────────────────────────────────
+function loadSettings() {
+  document.getElementById('apiUrlInput').value = API_BASE;
+  document.getElementById('pollIntervalInput').value = POLL_INTERVAL;
+  document.getElementById('autoRefreshToggle').checked = AUTO_REFRESH;
+  document.getElementById('subnetInput').value = localStorage.getItem('lastSubnet') || '10.141.1';
+}
+
+function saveSettings() {
+  API_BASE = document.getElementById('apiUrlInput').value.replace(/\/$/, '');
+  POLL_INTERVAL = parseInt(document.getElementById('pollIntervalInput').value);
+  AUTO_REFRESH = document.getElementById('autoRefreshToggle').checked;
+  localStorage.setItem('apiBase', API_BASE);
+  localStorage.setItem('pollInterval', POLL_INTERVAL);
+  localStorage.setItem('autoRefresh', AUTO_REFRESH);
+  stopPolling();
+  if (AUTO_REFRESH) startPolling();
+  toast('Ayarlar kaydedildi', 'success');
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(
+      page === 'dashboard' ? 'dashboard' :
+      page === 'scan' ? 'tarama' : 'ayar'
+    )) n.classList.add('active');
+  });
+  if (page === 'dashboard') {
+    loadPlugs();
+  }
+}
+
+// ── API HEALTH ────────────────────────────────────────────
+async function checkApiHealth() {
+  const dot = document.getElementById('apiDot');
+  const txt = document.getElementById('apiStatusText');
+  const settingsStatus = document.getElementById('settingsApiStatus');
+  try {
+    const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    const data = await r.json();
+    dot.className = 'status-dot online';
+    txt.textContent = `API v${data.version}`;
+    if (settingsStatus) settingsStatus.innerHTML = `<span style="color:var(--green)">● Bağlı</span>`;
+  } catch {
+    dot.className = 'status-dot offline';
+    txt.textContent = 'Bağlantı yok';
+    if (settingsStatus) settingsStatus.innerHTML = `<span style="color:var(--red)">● Bağlantı Yok</span>`;
+  }
+}
+
+// ── LOAD PLUGS ────────────────────────────────────────────
+async function loadPlugs() {
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/plugs?page_size=100`);
+    const data = await r.json();
+    plugs = data.items || [];
+    renderPlugGrid();
+    updateStats();
+    document.getElementById('plugCountBadge').textContent = plugs.length;
+    stopPolling();
+    if (AUTO_REFRESH && plugs.length > 0) startPolling();
+    // İlk yüklemede status çek
+    await pollAllStatuses();
+  } catch (e) {
+    toast('Prizler yüklenemedi: ' + e.message, 'error');
+  }
+}
+
+// ── RENDER GRID ───────────────────────────────────────────
+function renderPlugGrid() {
+  const grid = document.getElementById('plugGrid');
+  const empty = document.getElementById('dashEmptyState');
+
+  if (plugs.length === 0) {
+    grid.innerHTML = '';
+    grid.appendChild(empty);
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Mevcut kartları güncelle, yeni ekle, silinenleri kaldır
+  const existingIds = new Set([...grid.querySelectorAll('.plug-card')].map(c => c.dataset.plugId));
+  const newIds = new Set(plugs.map(p => String(p.id)));
+
+  // Silinenleri kaldır
+  existingIds.forEach(id => {
+    if (!newIds.has(id)) grid.querySelector(`[data-plug-id="${id}"]`)?.remove();
+  });
+
+  // Yeni ekle / mevcut güncelle
+  plugs.forEach(plug => {
+    let card = grid.querySelector(`[data-plug-id="${plug.id}"]`);
+    if (!card) {
+      card = createPlugCard(plug);
+      grid.appendChild(card);
+    }
+    updatePlugCardMeta(card, plug);
+  });
+}
+
+function createPlugCard(plug) {
+  const card = document.createElement('div');
+  card.className = 'plug-card';
+  card.dataset.plugId = plug.id;
+  card.innerHTML = getCardHTML(plug);
+  return card;
+}
+
+function getCardHTML(plug) {
+  const status = statusCache[plug.id];
+  const isOn = status?.is_on ?? false;
+  const isOnline = status?.is_online ?? null;
+  const typeLabel = plug.plug_type;
+
+  const metricsHTML = getMetricsHTML(plug, status);
+
+  return `
+    <div class="plug-card-header">
+      <div class="plug-info">
+        <div class="plug-name">${plug.name}</div>
+        <div class="plug-meta">
+          <span class="plug-type-badge badge-${plug.plug_type}">${typeLabel}</span>
+          <span class="plug-ip">${plug.ip_address}</span>
+          ${plug.location ? `<span class="plug-ip">📍 ${plug.location}</span>` : ''}
+        </div>
+      </div>
+      <button class="plug-power-btn ${isOn ? 'on' : 'off'}"
+              id="powerBtn-${plug.id}"
+              onclick="togglePower(${plug.id}, ${isOn})"
+              title="${isOn ? 'Kapat' : 'Aç'}">
+        ⏻
+      </button>
+    </div>
+    <div class="plug-card-body">
+      <div class="online-row">
+        <div class="online-indicator">
+          <div class="online-dot ${isOnline === null ? 'loading' : isOnline ? 'yes' : 'no'}"></div>
+          <span style="color:var(--text2)">${isOnline === null ? 'Sorgulanıyor...' : isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</span>
+          ${isOn ? '<span style="color:var(--green);font-size:10px;margin-left:4px">● AÇIK</span>' : ''}
+        </div>
+        <span class="last-updated" id="updated-${plug.id}">${status ? 'Az önce' : '—'}</span>
+      </div>
+      ${metricsHTML}
+      <div class="plug-actions">
+        <button class="btn btn-secondary btn-sm" onclick="restartPlug(${plug.id})" title="Yeniden Başlat">↺ Restart</button>
+        <button class="btn btn-secondary btn-sm" onclick="showPlugDetail(${plug.id})">📊 Detay</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlug(${plug.id})">🗑</button>
+      </div>
+    </div>
+  `;
+}
+
+function getMetricsHTML(plug, status) {
+  if (!status) {
+    return `<div class="metrics-grid">
+      <div class="metric"><div class="metric-label">Durum</div><div class="metric-value skeleton" style="height:24px;width:80px"> </div></div>
+      <div class="metric"><div class="metric-label">Güç</div><div class="metric-value skeleton" style="height:24px;width:60px"> </div></div>
+    </div>`;
+  }
+
+  const type = plug.plug_type;
+
+  if (type === 'hs110' || type === 'energy_monitor') {
+    return `<div class="metrics-grid">
+      <div class="metric highlight">
+        <div class="metric-label">Anlık Güç</div>
+        <div class="metric-value">${fmtNum(status.current_watt)}<span class="metric-unit">W</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Gerilim</div>
+        <div class="metric-value">${fmtNum(status.voltage)}<span class="metric-unit">V</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Akım</div>
+        <div class="metric-value">${fmtNum(status.current_ampere, 3)}<span class="metric-unit">A</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Toplam</div>
+        <div class="metric-value">${fmtNum(status.total_kwh, 3)}<span class="metric-unit">kWh</span></div>
+      </div>
+    </div>`;
+  }
+
+  if (type === 'surge_protector') {
+    return `<div class="metrics-grid">
+      <div class="metric highlight">
+        <div class="metric-label">Koruma</div>
+        <div class="metric-value" style="color:${status.protection_active ? 'var(--green)' : 'var(--red)'}">
+          ${status.protection_active ? 'AKTİF' : 'PASİF'}
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Surge Sayısı</div>
+        <div class="metric-value">${status.surge_count ?? '—'}</div>
+      </div>
+    </div>`;
+  }
+
+  // basic / hs100
+  return `<div class="metrics-grid">
+    <div class="metric highlight">
+      <div class="metric-label">Durum</div>
+      <div class="metric-value" style="color:${status.is_on ? 'var(--green)' : 'var(--text2)'}">
+        ${status.is_on ? 'AÇIK' : 'KAPALI'}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Uptime</div>
+      <div class="metric-value">${fmtUptime(status.uptime_seconds)}</div>
+    </div>
+  </div>`;
+}
+
+function updatePlugCardMeta(card, plug) {
+  const status = statusCache[plug.id];
+  const isOn = status?.is_on ?? false;
+  const isOnline = status?.is_online ?? null;
+
+  card.className = 'plug-card' + (isOn ? ' is-on' : '');
+
+  const powerBtn = card.querySelector('.plug-power-btn');
+  if (powerBtn) {
+    powerBtn.className = `plug-power-btn ${isOn ? 'on' : 'off'}`;
+    powerBtn.setAttribute('onclick', `togglePower(${plug.id}, ${isOn})`);
+    powerBtn.title = isOn ? 'Kapat' : 'Aç';
+  }
+
+  // Online dot
+  const dot = card.querySelector('.online-dot');
+  if (dot) dot.className = `online-dot ${isOnline === null ? 'loading' : isOnline ? 'yes' : 'no'}`;
+
+  // Updated time
+  const updEl = card.querySelector(`#updated-${plug.id}`);
+  if (updEl && status) updEl.textContent = new Date().toLocaleTimeString('tr-TR');
+
+  // Metrics
+  const metricsContainer = card.querySelector('.metrics-grid');
+  if (metricsContainer) metricsContainer.outerHTML = getMetricsHTML(plug, status);
+}
+
+// ── POLLING ───────────────────────────────────────────────
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(pollAllStatuses, POLL_INTERVAL * 1000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function pollAllStatuses() {
+  if (plugs.length === 0) return;
+  const ids = plugs.map(p => p.id);
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/plugs/statuses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ids),
+      signal: AbortSignal.timeout(10000),
+    });
+    const statuses = await r.json();
+    statuses.forEach(s => { if (s.plug_id) statusCache[s.plug_id] = s; });
+    updateStats();
+    plugs.forEach(plug => {
+      const card = document.querySelector(`[data-plug-id="${plug.id}"]`);
+      if (card) updatePlugCardMeta(card, plug);
+    });
+  } catch (e) {
+    console.warn('Polling hatası:', e.message);
+  }
+}
+
+async function refreshAll() {
+  await loadPlugs();
+  toast('Yenilendi', 'success');
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function updateStats() {
+  const total = plugs.length;
+  const online = Object.values(statusCache).filter(s => s.is_online).length;
+  const on = Object.values(statusCache).filter(s => s.is_on).length;
+  const totalWatt = Object.values(statusCache)
+    .reduce((sum, s) => sum + (s.current_watt || 0), 0);
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statOnline').textContent = online;
+  document.getElementById('statOn').textContent = on;
+  document.getElementById('statWatt').textContent = totalWatt.toFixed(1);
+}
+
+// ── POWER TOGGLE ──────────────────────────────────────────
+async function togglePower(plugId, currentlyOn) {
+  const btn = document.getElementById(`powerBtn-${plugId}`);
+  if (btn) btn.disabled = true;
+
+  const action = currentlyOn ? 'turn-off' : 'turn-on';
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/plugs/${plugId}/actions/${action}`, {
+      method: 'POST',
+    });
+    const data = await r.json();
+    if (data.success) {
+      toast(`${data.plug_name}: ${currentlyOn ? 'Kapatıldı' : 'Açıldı'}`, 'success');
+      // Status güncelle
+      setTimeout(() => pollAllStatuses(), 500);
+    } else {
+      toast('Komut başarısız: ' + data.message, 'error');
+    }
+  } catch (e) {
+    toast('Hata: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function restartPlug(plugId) {
+  const plug = plugs.find(p => p.id === plugId);
+  if (!confirm(`"${plug?.name}" yeniden başlatılsın mı?`)) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/plugs/${plugId}/actions/restart`, { method: 'POST' });
+    const data = await r.json();
+    toast(data.success ? `${data.plug_name} yeniden başlatıldı` : 'Başarısız: ' + data.message,
+          data.success ? 'success' : 'error');
+    setTimeout(() => pollAllStatuses(), 2500);
+  } catch (e) {
+    toast('Hata: ' + e.message, 'error');
+  }
+}
+
+async function deletePlug(plugId) {
+  const plug = plugs.find(p => p.id === plugId);
+  if (!confirm(`"${plug?.name}" silinsin mi?`)) return;
+  try {
+    await fetch(`${API_BASE}/api/v1/plugs/${plugId}`, { method: 'DELETE' });
+    delete statusCache[plugId];
+    await loadPlugs();
+    toast('Priz silindi', 'info');
+  } catch (e) {
+    toast('Silinemedi: ' + e.message, 'error');
+  }
+}
+
+// ── DETAIL ────────────────────────────────────────────────
+function showPlugDetail(plugId) {
+  const plug = plugs.find(p => p.id === plugId);
+  const status = statusCache[plugId];
+  if (!plug) return;
+
+  const info = [
+    ['ID', plug.id],
+    ['Tip', plug.plug_type],
+    ['IP', plug.ip_address],
+    ['MAC', plug.mac_address || '—'],
+    ['Firmware', plug.firmware_version || '—'],
+    ['Konum', plug.location || '—'],
+    ['Durum', status?.is_on ? '🟢 Açık' : '⚫ Kapalı'],
+    ['Çevrimiçi', status?.is_online ? '✅ Evet' : '❌ Hayır'],
+    ...(status?.current_watt != null ? [['Güç', status.current_watt + ' W']] : []),
+    ...(status?.voltage != null ? [['Gerilim', status.voltage + ' V']] : []),
+    ...(status?.current_ampere != null ? [['Akım', status.current_ampere + ' A']] : []),
+    ...(status?.total_kwh != null ? [['Toplam', status.total_kwh + ' kWh']] : []),
+    ...(status?.alias ? [['Alias', status.alias]] : []),
+    ...(status?.rssi != null ? [['RSSI', status.rssi + ' dBm']] : []),
+    ...(status?.on_time_seconds != null ? [['Uptime', fmtUptime(status.on_time_seconds)]] : []),
+  ];
+
+  const rows = info.map(([k, v]) => `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--text2);font-family:var(--mono);font-size:12px">${k}</span>
+      <span style="font-family:var(--mono);font-size:12px">${v}</span>
+    </div>`).join('');
+
+  const modal = document.getElementById('registerModal');
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title">${plug.name}</div>
+      <div class="modal-sub">Cihaz Detayı</div>
+      <div style="margin-bottom:24px">${rows}</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-danger btn-sm" onclick="closeModal();deletePlug(${plug.id})">🗑 Sil</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Kapat</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+}
+
+// ── SCAN ─────────────────────────────────────────────────
+async function startScan() {
+  const subnet = document.getElementById('subnetInput').value.trim();
+  const timeout = parseFloat(document.getElementById('timeoutInput').value);
+  if (!subnet) { toast('Subnet girin', 'error'); return; }
+
+  localStorage.setItem('lastSubnet', subnet);
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Taranıyor...';
+
+  document.getElementById('scanProgress').classList.add('visible');
+  document.getElementById('progressText').textContent = `${subnet}.1 - ${subnet}.254 taranıyor...`;
+  document.getElementById('scanResults').style.display = 'none';
+
+  const start = Date.now();
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/discovery/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subnet, timeout }),
+      signal: AbortSignal.timeout(120000),
+    });
+    const data = await r.json();
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+
+    document.getElementById('progressBar').style.width = '100%';
+    document.getElementById('progressBar').classList.remove('indeterminate');
+    document.getElementById('progressText').textContent = `Tamamlandı — ${elapsed}s`;
+
+    renderScanResults(data);
+  } catch (e) {
+    toast('Tarama hatası: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ Taramayı Başlat';
+  }
+}
+
+function renderScanResults(data) {
+  const resultsDiv = document.getElementById('scanResults');
+  const list = document.getElementById('deviceList');
+  const title = document.getElementById('resultsTitle');
+
+  title.textContent = `${data.found_count} cihaz bulundu (${data.scanned_count} IP tarandı)`;
+  resultsDiv.style.display = 'block';
+
+  if (data.devices.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">Cihaz bulunamadı</div>
+      <div class="empty-text">Bu subnet'te Kasa/HS cihazı tespit edilemedi.<br>Doğru subnet'i girdiğinden emin ol.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = data.devices.map(dev => `
+    <div class="device-item">
+      <div class="device-icon">🔌</div>
+      <div class="device-details">
+        <div class="device-model">${dev.model || 'Bilinmeyen Model'}</div>
+        <div class="device-sub">
+          <span class="device-sub-item">IP: <span>${dev.ip_address}</span></span>
+          ${dev.mac_address ? `<span class="device-sub-item">MAC: <span>${dev.mac_address}</span></span>` : ''}
+          <span class="device-sub-item">Tip: <span>${dev.plug_type}</span></span>
+          ${dev.firmware_version ? `<span class="device-sub-item">FW: <span>${dev.firmware_version.split(' ')[0]}</span></span>` : ''}
+        </div>
+      </div>
+      ${dev.already_registered
+        ? `<span class="already-badge">✓ Kayıtlı</span>`
+        : `<button class="btn btn-primary btn-sm" onclick="openRegisterModal('${dev.ip_address}', '${dev.model}')">+ Kaydet</button>`
+      }
+    </div>
+  `).join('');
+}
+
+// ── REGISTER MODAL ────────────────────────────────────────
+function openRegisterModal(ip, model) {
+  pendingRegisterIp = ip;
+  // Reset modal to registration form
+  document.getElementById('modalSubtitle').textContent = `IP: ${ip} — Model: ${model}`;
+  document.querySelector('.modal-fields').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">Cihaz Adı *</label>
+      <input class="form-input" id="regName" placeholder="Örn: Salon TV Prizi">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Konum</label>
+      <input class="form-input" id="regLocation" placeholder="Örn: Oturma Odası">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Not</label>
+      <input class="form-input" id="regNotes" placeholder="Opsiyonel not...">
+    </div>
+  `;
+  document.querySelector('.modal-actions').innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+    <button class="btn btn-primary" id="regBtn" onclick="registerDevice()">Kaydet</button>
+  `;
+  document.getElementById('registerModal').classList.add('open');
+  setTimeout(() => document.getElementById('regName')?.focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('registerModal').classList.remove('open');
+  pendingRegisterIp = null;
+}
+
+async function registerDevice() {
+  const name = document.getElementById('regName')?.value?.trim();
+  const location = document.getElementById('regLocation')?.value?.trim();
+  const notes = document.getElementById('regNotes')?.value?.trim();
+
+  if (!name) { toast('Cihaz adı zorunlu', 'error'); return; }
+
+  const btn = document.getElementById('regBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Kaydediliyor...'; }
+
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/discovery/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ip_address: pendingRegisterIp,
+        name,
+        location: location || null,
+        notes: notes || null,
+      }),
+    });
+
+    if (r.ok) {
+      const data = await r.json();
+      toast(`"${data.name}" başarıyla kaydedildi!`, 'success');
+      closeModal();
+      await loadPlugs();
+      navigate('dashboard');
+    } else {
+      const err = await r.json();
+      toast('Kayıt hatası: ' + (err.detail || 'Bilinmeyen hata'), 'error');
+    }
+  } catch (e) {
+    toast('Hata: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; }
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const colors = { success: 'var(--green)', error: 'var(--red)', info: 'var(--accent)' };
+
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span style="color:${colors[type]};font-size:14px">${icons[type]}</span> ${msg}`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function fmtNum(val, decimals = 2) {
+  if (val == null) return '—';
+  return Number(val).toFixed(decimals);
+}
+
+function fmtUptime(seconds) {
+  if (seconds == null) return '—';
+  if (seconds < 60) return seconds + 's';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+  return Math.floor(seconds / 3600) + 'h';
+}
+
+// Modal dışına tıklayınca kapat
+document.getElementById('registerModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+async function scanPlugAPs() {
+  const list = document.getElementById('apList');
+  list.innerHTML = '<div style="color:var(--text2);font-size:13px">Taranıyor...</div>';
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/provision/scan-ap`);
+    const data = await r.json();
+    if (data.tp_link_networks.length === 0) {
+      list.innerHTML = '<div style="color:var(--text2);font-size:13px">TP-Link ağı bulunamadı. Priz güce takılı ve fabrika modunda mı?</div>';
+      return;
+    }
+    list.innerHTML = data.tp_link_networks.map(ssid => `
+      <div class="device-item" style="cursor:pointer" onclick="selectPlugAP('${ssid}')">
+        <div class="device-icon">📡</div>
+        <div class="device-details">
+          <div class="device-model">${ssid}</div>
+          <div class="device-sub">
+            <span class="device-sub-item">Fabrika modu priz AP'i</span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm">Seç</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    toast('AP tarama hatası: ' + e.message, 'error');
+  }
+}
+
+function selectPlugAP(ssid) {
+  document.getElementById('plugApSsid').value = ssid;
+  toast(`Seçildi: ${ssid}`, 'info');
+}
+
+async function startProvision() {
+  const plugApSsid = document.getElementById('plugApSsid').value.trim();
+  const targetSsid = document.getElementById('targetSsid').value.trim();
+  const targetPassword = document.getElementById('targetPassword').value;
+  const originalSsid = document.getElementById('originalSsid').value.trim();
+
+  // 1. Temel Giriş Kontrolü
+  if (!plugApSsid || !targetSsid || !targetPassword) {
+    toast('Priz AP adı, hedef WiFi ve şifre zorunlu', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('provisionBtn');
+  btn.disabled = true;
+  btn.textContent = '⟳ Kurulum yapılıyor...';
+
+  // 2. Arayüzü Hazırla
+  document.getElementById('provisionSteps').style.display = 'block';
+  document.getElementById('stepsList').innerHTML = '<div style="color:var(--text2);font-size:12px">İşlem başlatıldı, lütfen bekleyin...</div>';
+  document.getElementById('provisionResult').innerHTML = '';
+
+  try {
+    // 3. API Çağrısı
+    const r = await fetch(`${API_BASE}/api/v1/provision/setup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8',
+    'Accept-Charset': 'utf-8' },
+      body: JSON.stringify({
+        plug_ap_ssid: plugApSsid,
+        target_ssid: targetSsid,
+        target_password: targetPassword,
+        original_ssid: originalSsid || null,
+      }),
+      signal: AbortSignal.timeout(120000), // 2 dakika zaman aşımı
+    });
+
+    const data = await r.json();
+
+    // 4. Adımları Göster (Güvenli Kontrol Eklenmiş Hali)
+    const steps = data.steps || []; // data.steps tanımsızsa boş liste kullan
+
+    if (steps.length > 0) {
+      document.getElementById('stepsList').innerHTML = steps.map(s => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2);font-family:var(--mono);font-size:12px">${s.step || 'Adım'}</span>
+          <span style="font-family:var(--mono);font-size:12px">${s.value || 'Tamamlandı'}</span>
+        </div>
+      `).join('');
+    } else {
+      document.getElementById('stepsList').innerHTML = '<div style="color:var(--text2);font-size:12px">Adım detayı alınamadı.</div>';
+    }
+
+    // 5. Sonuç Gösterimi
+    const resultEl = document.getElementById('provisionResult');
+    if (data.success) {
+      resultEl.innerHTML = `
+        <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);border-radius:12px;padding:16px;margin-top:8px">
+          <div style="color:var(--green);font-family:var(--mono);font-weight:600;margin-bottom:8px">✅ ${data.message}</div>
+          ${data.plug_ip ? `<div style="font-size:13px">Priz IP: <b>${data.plug_ip}</b></div>` : ''}
+          ${data.model ? `<div style="font-size:13px">Model: <b>${data.model}</b></div>` : ''}
+          ${data.plug_ip ? `<br><button class="btn btn-primary btn-sm" onclick="quickRegister('${data.plug_ip}', '${data.model}')">+ Sisteme Kaydet</button>` : ''}
+        </div>`;
+      toast('Kurulum başarılı!', 'success');
+    } else {
+      resultEl.innerHTML = `
+        <div style="background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.25);border-radius:12px;padding:16px;margin-top:8px">
+          <div style="color:var(--red);font-family:var(--mono);font-weight:600">❌ ${data.message || 'Bir hata oluştu.'}</div>
+        </div>`;
+      toast('Kurulum başarısız', 'error');
+    }
+  } catch (e) {
+    // 6. Hata Yakalama
+    console.error("Provision Hatası:", e);
+    toast('Hata: ' + (e.name === 'TimeoutError' ? 'İşlem zaman aşımına uğradı' : e.message), 'error');
+    document.getElementById('stepsList').innerHTML = `<div style="color:var(--red);font-size:12px">Bağlantı hatası oluştu.</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Kurulumu Başlat';
+  }
+}
+
+function quickRegister(ip, model) {
+  navigate('scan');
+  setTimeout(() => openRegisterModal(ip, model || 'Yeni Priz'), 300);
+}
+</script>
+</body>
+</html>
